@@ -1,10 +1,33 @@
 from os import system, name
-import csv
 import datetime
 import re
+import unittest
 
 from peewee import *
 db = SqliteDatabase('work_logs.db')
+
+
+class TestStringMethods(unittest.TestCase):
+    def test_show_menu_header(self):
+        self.assertEqual(show_menu_header("Test") == 1)
+
+    def test_main_menu(self):
+        self.assertTrue(main_menu())
+
+    def test_run_main_menu(self):
+        self.assertEqual(run_main_menu() == 1)
+
+    def test_display_find_menu(self):
+        self.assertEqual(display_find_menu() == 1)
+
+    def test_create_new_entry(self):
+        self.assertEqual(create_new_entry() == 1)
+
+    def test_load_work_log(self):
+        self.assertEqual(load_work_log('e') == 1)
+        self.assertEqual(load_work_log('d') == 1)
+        self.assertEqual(load_work_log('t') == 1)
+        self.assertEqual(load_work_log('s') == 1)
 
 
 class WorkLog(Model):
@@ -13,9 +36,11 @@ class WorkLog(Model):
     minutes = IntegerField(default=0)
     date = DateTimeField(default=datetime.datetime.now)
     notes = CharField(max_length=255)
+    show_log = IntegerField(default=0)
 
     class Meta:
         database = db
+
 
 def show_menu_header(header):
     # for windows
@@ -25,6 +50,7 @@ def show_menu_header(header):
     else:
         _ = system('clear')
     print("______Work Log {}______".format(header))
+    return 1
 
 
 def main_menu():
@@ -59,6 +85,7 @@ def run_main_menu():
         else:
             print("You did not enter a valid choice, please only enter  "
                   "letters from the list")
+    return 1
 
 
 def display_find_menu():
@@ -93,6 +120,7 @@ Find by [S]earch Term
         else:
             print("You did not enter a valid choice, please only enter "
                   "letters from the list")
+    return 1
 
 
 def create_new_entry():
@@ -107,15 +135,16 @@ def create_new_entry():
                    minutes=entry_information["minutes"],
                    notes=entry_information["notes"])
     run_main_menu()
+    return 1
 
 
 def gather_entry_information(include_date):
-    date_str = datetime.date.today().strftime("%m/%d/%Y")
+    date_string = datetime.date.today().strftime("%m/%d/%Y")
     if include_date:
         while True:
             try:
-                date_str = input("What is your date?>")
-                datetime.datetime.strptime(date_str, '%m/%d/%Y')
+                date_string = input("What is your date?>")
+                datetime.datetime.strptime(date_string, '%m/%d/%Y')
             except ValueError:
                 print("Incorrect data format, should be MM/DD/YYYY")
                 continue
@@ -124,8 +153,8 @@ def gather_entry_information(include_date):
     # Make sure your script runs without errors. Catch exceptions and report
     # errors to the user in a meaningful way.
     while True:
-        name = input("What is your name ?>")
-        if not name:
+        full_name = input("What is your name ?>")
+        if not full_name:
             print("name is not optional, please enter it")
             continue
         else:
@@ -146,33 +175,38 @@ def gather_entry_information(include_date):
         else:
             break
     notes = input("Please enter any optional notes>")
-    return {"name": name, "date": date_str, "task_title": task_title,
+    return {"name": full_name, "date": date_string, "task_title": task_title,
             "minutes": minutes_spent, "notes": notes}
 
 
 def load_work_log(search_type):
-    all_work_logs =
+    all_work_logs = WorkLog.select().dicts(True)
 
     # with open(WORK_LOG_FILE, mode='r') as csv_file:
     #    csv_reader = csv.DictReader(csv_file)
     #    for row in csv_reader:
     #       all_work_logs.append({"date": row["date"], "task_title":
-    #                              row["task_title"], "minutes": row["minutes"],
+    #                              row["task_title"], "minutes":
+    # row["minutes"],
     #                             "notes": row["notes"], "show_log": 1})
 
     # for log in all_work_logs:
-    # print(log["date"] + " " + str(log["show_log"]))
+    # print(log)
     if search_type == 'e':
         search_pattern = input("For which employee are you searching?>")
-        return WorkLog.select().where(WorkLog.name ** "%Physics%")
+        for log in all_work_logs:
+            log["show_log"] = 1
             if not re.search(search_pattern, log["name"]):
+                log["show_log"] = 0
+        #   if not re.search(search_pattern, log["name"]):
         # for log in all_work_logs:
         #   print(log["name"] + " " + log["name"] + " " + str(log["show_
         # log"]))
     elif search_type == 'd':
         while True:
             try:
-                date_str = input("For which MM/DD/YYYY date(s) do you want to "
+                date_str = input("For which MM/DD/YYYY date(s) do you "
+                                 "want to "
                                  "search? (enter two separated by a space"
                                  " if you want a range)>")
                 split_date_str = date_str.split()
@@ -189,12 +223,14 @@ def load_work_log(search_type):
                                                               '%m/%d/%Y')
                         if date1 < date2:
                             # print("date1 is earlier than date2 " +
-                            # log["date"] + " " + str(log_date < date1) + " "
+                            # log["date"] + " " + str(log_date < date1)
+                            # + " "
                             # + str(log_date > date2))
                             if log_date < date1 or log_date > date2:
                                 log["show_log"] = 0
                         elif date2 < date1:
-                            # print("date1 is later than date2 " + log["date"]
+                            # print("date1 is later than date2 "
+                            # + log["date"]
                             # + " " + str(log_date < date2) + " "
                             # + str(log_date > date1))
                             if log_date < date2 or log_date > date1:
@@ -204,7 +240,6 @@ def load_work_log(search_type):
                             # log["date"] + " " + str(log_date != date1))
                             if log_date != date1:
                                 log["show_log"] = 0
-
                 else:
                     only_date = datetime.datetime.strptime(date_str,
                                                            '%m/%d/%Y')
@@ -227,7 +262,8 @@ def load_work_log(search_type):
     elif search_type == 't':
         while True:
             try:
-                search_minutes = int(input("For how many minutes do you want "
+                search_minutes = int(input("For how many minutes do "
+                                           "you want "
                                            "to search?>"))
                 for log in all_work_logs:
                     log["show_log"] = 1
@@ -248,7 +284,8 @@ def load_work_log(search_type):
                     re.search(search_pattern, log["notes"]):
                 log["show_log"] = 0
         # for log in all_work_logs:
-        #  print(log["task_title"] + " " + log["notes"] + " " + str(log["show_
+        #  print(log["task_title"] + " " + log["notes"] + " "
+        # + str(log["show_
         # log"]))
     return all_work_logs
 
@@ -258,8 +295,9 @@ def display_entries(search_type):
     # readable format with the date, task name, time
     # spent, and notes information.
     work_logs = load_work_log(search_type)
+    print(len(work_logs))
 
-    if sum(item['show_log'] for item in work_logs) == 0:
+    if len(work_logs) == 0:
         print("Your search returned no values, please try again")
         return
 
@@ -275,9 +313,10 @@ def display_entries(search_type):
         # records (previous/next/back).
         if log["show_log"]:
             show_menu_header("Display Entries")
-            print("Date: {} \nTask Title: {} \nMinutes Spent: {} "
+            print("Name: {} \nDate: {} \nTask Title: {} \nMinutes Spent: {} "
                   "\nNotes(Optional): {}"
-                  .format(log["date"], log["task_title"], str(log["minutes"]),
+                  .format(log["name"], log["date"], log["task_title"],
+                          str(log["minutes"]),
                           log["notes"]))
             choice = input("""What would like you like to do? [E]dit record /
             [D]elete record / [N]ext record /
@@ -292,17 +331,47 @@ def display_entries(search_type):
         if choice == 'e':
             # print("You chose to edit")
             edited_entry_information = gather_entry_information(True)
-            log["date"] = edited_entry_information[0]
-            log["task_title"] = edited_entry_information[1]
-            log["minutes"] = edited_entry_information[2]
-            log["notes"] = edited_entry_information[3]
+            # print(log)
+            # print(edited_entry_information)
+            # for log in work_logs:
+            #    print(log)
+            q = (
+                WorkLog.update({WorkLog.name: edited_entry_information["name"],
+                                WorkLog.date: edited_entry_information["date"],
+                                WorkLog.task_title:
+                                    edited_entry_information["task_title"],
+                                WorkLog.minutes:
+                                    edited_entry_information["minutes"],
+                                WorkLog.notes:
+                                    edited_entry_information["notes"],
+                                })
+                .where(WorkLog.name == log["name"],
+                       WorkLog.date == log["date"],
+                       WorkLog.task_title == log["task_title"],
+                       WorkLog.minutes == log["minutes"],
+                       WorkLog.notes == log["notes"]))
+            q.execute()
+            log["name"] = edited_entry_information["name"]
+            log["date"] = edited_entry_information["date"]
+            log["task_title"] = edited_entry_information["task_title"]
+            log["minutes"] = edited_entry_information["minutes"]
+            log["notes"] = edited_entry_information["notes"]
+            # for log in work_logs:
+            #    print(log)
         elif choice == 'd':
             if len(work_logs) == 1:
                 print("You can't delete the last log")
             else:
                 # print("You chose go to delete the record")
-                work_logs.remove(log)
-                delete_work_log(work_logs)
+                q = (
+                    WorkLog.delete()
+                    .where(WorkLog.name == log["name"],
+                           WorkLog.date == log["date"],
+                           WorkLog.task_title == log["task_title"],
+                           WorkLog.minutes == log["minutes"],
+                           WorkLog.notes == log["notes"]))
+                q.execute()
+                # work_logs.remove(log)
                 break
         # Entries are displayed one at a time with the ability to page through
         # records (previous/next/back).
@@ -320,7 +389,7 @@ def display_entries(search_type):
                 i -= 1
         elif choice == 'r':
             # print("You chose to return to the main menu")
-            overwrite_work_log(work_logs)
+            # overwrite_work_log(work_logs)
             run_main_menu()
             break
         else:
@@ -330,7 +399,9 @@ def display_entries(search_type):
 
 if __name__ == "__main__":
     db.connect()
+    # db.drop_tables([WorkLog])
     db.create_tables([WorkLog], safe=True)
-    query = WorkLog.select()
-    print(len(query))
+    # query = WorkLog.select()
+    # print(len(query))
     run_main_menu()
+    unittest.main()
