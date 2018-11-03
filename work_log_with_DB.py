@@ -2,33 +2,124 @@ from os import system, name
 import datetime
 import re
 import unittest
+from unittest import mock
 
 from peewee import *
 db = SqliteDatabase('work_logs.db')
 
 
-class TestStringMethods(unittest.TestCase):
+class TestMethods(unittest.TestCase):
     def test_show_menu_header(self):
-        self.assertEqual(show_menu_header("Test") == 1)
+        self.assertEqual(show_menu_header("Test"), 1)
 
     def test_main_menu(self):
         self.assertTrue(main_menu())
 
-    def test_run_main_menu(self):
-        self.assertEqual(run_main_menu() == 1)
+    def test_main_menu_q(self):
+        with mock.patch('builtins.input', return_value='q'):
+            assert main_menu() == 'q'
 
-    def test_display_find_menu(self):
-        self.assertEqual(display_find_menu() == 1)
+    def test_run_main_menu_a(self):
+        with mock.patch('builtins.input', side_effect=['a', 'bob', 'tester',
+                                                       '2', 'notes good']):
+            assert run_main_menu() == 'a'
 
-    def test_create_new_entry(self):
-        self.assertEqual(create_new_entry() == 1)
+    def test_run_main_menu_l(self):
+        with mock.patch('builtins.input', side_effect=['l', 'e', 'bob']):
+            assert run_main_menu() == 'l'
 
-    def test_load_work_log(self):
-        self.assertEqual(load_work_log('e') == 1)
-        self.assertEqual(load_work_log('d') == 1)
-        self.assertEqual(load_work_log('t') == 1)
-        self.assertEqual(load_work_log('s') == 1)
+    def test_run_main_menu_q(self):
+        with mock.patch('builtins.input', side_effect=['q']):
+            assert run_main_menu() == 'q'
 
+    def test_run_main_menu_x(self):
+        with mock.patch('builtins.input', side_effect=['x']):
+            assert run_main_menu() == 'x'
+
+    def test_display_find_menu_e(self):
+        with mock.patch('builtins.input', side_effect=['e', 'bob']):
+            assert display_find_menu() == 'e'
+
+    def test_display_find_menu_d(self):
+        with mock.patch('builtins.input', side_effect=['d', '11/1/2018']):
+            assert display_find_menu() == 'd'
+
+    def test_display_find_menu_t(self):
+        with mock.patch('builtins.input', side_effect=['t', '2']):
+            assert display_find_menu() == 't'
+
+    def test_display_find_menu_t(self):
+        with mock.patch('builtins.input', side_effect=['t', 'x']):
+            assert display_find_menu() == 't'
+
+    def test_display_find_menu_s(self):
+        with mock.patch('builtins.input', side_effect=['s', 'note']):
+            assert display_find_menu() == 's'
+
+    def test_display_find_menu_r(self):
+        with mock.patch('builtins.input', side_effect=['r', 'q']):
+            assert display_find_menu() == 'r'
+
+    def test_display_find_menu_x(self):
+        with mock.patch('builtins.input', side_effect=['x', 'r', 'q']):
+            assert display_find_menu() == 'x'
+
+    def test_load_work_log_e(self):
+        with mock.patch('builtins.input', side_effect=['bob']):
+            assert load_work_log("e") == 'e'
+
+    def test_load_work_log_d(self):
+        with mock.patch('builtins.input', side_effect=['11/1/2018']):
+            assert load_work_log("d") == 'd'
+
+    def test_load_work_log_d2(self):
+        with mock.patch('builtins.input', side_effect=['11/1/2018 11/2/2018']):
+            assert load_work_log("d") == 'd'
+
+    def test_load_work_log_d3(self):
+        with mock.patch('builtins.input', side_effect=['11/1/2018 5/2/2018']):
+            assert load_work_log("d") == 'd'
+
+    def test_load_work_log_d3(self):
+        with mock.patch('builtins.input', side_effect=['11/1/2018 11/1/2018']):
+            assert load_work_log("d") == 'd'
+
+    def test_load_work_log_d4(self):
+        with mock.patch('builtins.input', side_effect=['e']):
+            assert load_work_log("d") == 'd'
+
+    def test_load_work_log_x(self):
+        with mock.patch('builtins.input', side_effect=['x']):
+            assert load_work_log("x") == 'x'
+
+    def test_load_work_log_t(self):
+        with mock.patch('builtins.input', side_effect=['2']):
+            assert load_work_log("t") == 't'
+
+    def test_load_work_log_s(self):
+        with mock.patch('builtins.input', side_effect=['note']):
+            assert load_work_log("s") == 's'
+
+    def test_display_entries_s(self):
+        with mock.patch('builtins.input', side_effect=['note', 'n']):
+            assert display_entries("s") == 's'
+
+    def test_display_entries_s2(self):
+        with mock.patch('builtins.input', side_effect=['note', 'p']):
+            assert display_entries("s") == 's'
+
+    def test_display_entries_s3(self):
+        with mock.patch('builtins.input', side_effect=['note', 'r']):
+            assert display_entries("s") == 's'
+
+    def test_display_entries_d(self):
+        with mock.patch('builtins.input', side_effect=['note', 'd']):
+            assert display_entries("s") == 's'
+
+    def test_display_entries_e(self):
+        with mock.patch('builtins.input', side_effect=['note', 'e', '5/5/2018',
+                                                       'b2', '2', '2', 'e']):
+            assert display_entries("s") == 's'
 
 class WorkLog(Model):
     name = CharField(max_length=255)
@@ -72,12 +163,10 @@ def run_main_menu():
         if choice == 'a':
             print("You chose to add a new entry")
             create_new_entry()
-            break
         elif choice == 'l':
             print("You chose to search for entry")
             display_find_menu()
             # display_entries()
-            break
         # Menu has a “quit” option to exit the program.
         elif choice == 'q':
             print("We are sorry to see you go, goodbye.")
@@ -85,7 +174,6 @@ def run_main_menu():
         else:
             print("You did not enter a valid choice, please only enter  "
                   "letters from the list")
-    return 1
 
 
 def display_find_menu():
@@ -120,7 +208,6 @@ Find by [S]earch Term
         else:
             print("You did not enter a valid choice, please only enter "
                   "letters from the list")
-    return 1
 
 
 def create_new_entry():
@@ -295,7 +382,7 @@ def display_entries(search_type):
     # readable format with the date, task name, time
     # spent, and notes information.
     work_logs = load_work_log(search_type)
-    print(len(work_logs))
+    # print(len(work_logs))
 
     if len(work_logs) == 0:
         print("Your search returned no values, please try again")
@@ -362,7 +449,10 @@ def display_entries(search_type):
             if len(work_logs) == 1:
                 print("You can't delete the last log")
             else:
-                # print("You chose go to delete the record")
+                # print("You chose to delete the record")
+                # print(log)
+                # for log in work_logs:
+                #    print(log)
                 q = (
                     WorkLog.delete()
                     .where(WorkLog.name == log["name"],
@@ -371,7 +461,6 @@ def display_entries(search_type):
                            WorkLog.minutes == log["minutes"],
                            WorkLog.notes == log["notes"]))
                 q.execute()
-                # work_logs.remove(log)
                 break
         # Entries are displayed one at a time with the ability to page through
         # records (previous/next/back).
@@ -401,7 +490,5 @@ if __name__ == "__main__":
     db.connect()
     # db.drop_tables([WorkLog])
     db.create_tables([WorkLog], safe=True)
-    # query = WorkLog.select()
-    # print(len(query))
+    # unittest.main()
     run_main_menu()
-    unittest.main()
