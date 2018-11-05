@@ -5,6 +5,9 @@ import unittest
 from unittest import mock
 
 from peewee import *
+import peewee
+print(peewee.__version__)
+
 db = SqliteDatabase('work_logs.db')
 
 
@@ -121,6 +124,7 @@ class TestMethods(unittest.TestCase):
                                                        'b2', '2', '2', 'e']):
             assert display_entries("s") == 's'
 
+
 class WorkLog(Model):
     name = CharField(max_length=255)
     task_title = CharField(max_length=255)
@@ -208,6 +212,7 @@ Find by [S]earch Term
         else:
             print("You did not enter a valid choice, please only enter "
                   "letters from the list")
+    print("display_find_menu after")
 
 
 def create_new_entry():
@@ -240,7 +245,7 @@ def gather_entry_information(include_date):
     # Make sure your script runs without errors. Catch exceptions and report
     # errors to the user in a meaningful way.
     while True:
-        full_name = input("What is your name ?>")
+        full_name = input("What is your name?>")
         if not full_name:
             print("name is not optional, please enter it")
             continue
@@ -281,14 +286,8 @@ def load_work_log(search_type):
     # print(log)
     if search_type == 'e':
         search_pattern = input("For which employee are you searching?>")
-        for log in all_work_logs:
-            log["show_log"] = 1
-            if not re.search(search_pattern, log["name"]):
-                log["show_log"] = 0
-        #   if not re.search(search_pattern, log["name"]):
-        # for log in all_work_logs:
-        #   print(log["name"] + " " + log["name"] + " " + str(log["show_
-        # log"]))
+        return all_work_logs.select().where(WorkLog.name.contains
+                                            (search_pattern))
     elif search_type == 'd':
         while True:
             try:
@@ -305,40 +304,23 @@ def load_work_log(search_type):
                     # print("The first date is " + split_date_str[0])
                     # print("The second date is " + split_date_str[1])
                     for log in all_work_logs:
-                        log["show_log"] = 1
-                        log_date = datetime.datetime.strptime(log["date"],
-                                                              '%m/%d/%Y')
+                        log_date = log["date"]
                         if date1 < date2:
-                            # print("date1 is earlier than date2 " +
-                            # log["date"] + " " + str(log_date < date1)
-                            # + " "
-                            # + str(log_date > date2))
                             if log_date < date1 or log_date > date2:
-                                log["show_log"] = 0
+                                return all_work_logs.select().where(
+                                    WorkLog.date >= date1 & WorkLog.date
+                                    <= date2)
                         elif date2 < date1:
-                            # print("date1 is later than date2 "
-                            # + log["date"]
-                            # + " " + str(log_date < date2) + " "
-                            # + str(log_date > date1))
-                            if log_date < date2 or log_date > date1:
-                                log["show_log"] = 0
-                        else:
-                            # print("dates are equal, log date is " +
-                            # log["date"] + " " + str(log_date != date1))
-                            if log_date != date1:
-                                log["show_log"] = 0
+                            return all_work_logs.select().where(
+                                WorkLog.date >= date2 & WorkLog.date
+                                <= date1)
                 else:
                     only_date = datetime.datetime.strptime(date_str,
                                                            '%m/%d/%Y')
-                    # print("The only date is " + date_str)
-                    for log in all_work_logs:
-                        log["show_log"] = 1
-                        log_date = datetime.datetime.strptime(log["date"],
-                                                              '%m/%d/%Y')
-                        # print("log date is " + log["date"] + " " +
-                        # str(log_date != only_date))
-                        if log_date != only_date:
-                            log["show_log"] = 0
+                    return all_work_logs.select().where(
+                        WorkLog.date.month == only_date.month,
+                        WorkLog.date.day == only_date.day,
+                        WorkLog.date.year == only_date.year)
             except ValueError:
                 print("Incorrect data format, should be MM/DD/YYYY")
                 continue
@@ -352,10 +334,8 @@ def load_work_log(search_type):
                 search_minutes = int(input("For how many minutes do "
                                            "you want "
                                            "to search?>"))
-                for log in all_work_logs:
-                    log["show_log"] = 1
-                    if int(log["minutes"]) != search_minutes:
-                        log["show_log"] = 0
+                return all_work_logs.select().where(WorkLog.minutes ==
+                                                    search_minutes)
             except ValueError:
                 print("Please input an integer amount of minutes")
                 continue
@@ -365,15 +345,14 @@ def load_work_log(search_type):
                 break
     elif search_type == 's':
         search_pattern = input("What is your search string?>")
-        for log in all_work_logs:
-            log["show_log"] = 1
-            if not re.search(search_pattern, log["task_title"]) and not \
-                    re.search(search_pattern, log["notes"]):
-                log["show_log"] = 0
-        # for log in all_work_logs:
-        #  print(log["task_title"] + " " + log["notes"] + " "
-        # + str(log["show_
-        # log"]))
+        return all_work_logs.select().where(WorkLog.task_title.contains
+                                            (search_pattern)
+                                            | WorkLog.notes.contains
+                                            (search_pattern))
+    # for log in all_work_logs:
+    #     print(str(log["name"]) + " " + log["task_title"] + " " + log["notes"]
+    #           + " " + str(log["show_log"]))
+    # print(all_work_logs.where(WorkLog.show_log == 1).count())
     return all_work_logs
 
 
@@ -382,15 +361,16 @@ def display_entries(search_type):
     # readable format with the date, task name, time
     # spent, and notes information.
     work_logs = load_work_log(search_type)
-    # print(len(work_logs))
+    print(work_logs.count())
 
-    if len(work_logs) == 0:
+    print("display_entries before" + str(work_logs.count()))
+    if work_logs.count() == 0:
         print("Your search returned no values, please try again")
         return
 
-    # for log in work_logs:
-    #     print(log["task_title"] + " " + log["notes"] + " " +
-    # str(log["show_log"]))
+    for log in work_logs:
+        print(log["name"] + " " + log["task_title"] + " "
+              + log["notes"] + " " + str(log["show_log"]))
     choice = ''
     i = 0
     while choice != 'r':
@@ -398,21 +378,19 @@ def display_entries(search_type):
         log = work_logs[i]
         # Entries are displayed one at a time with the ability to page through
         # records (previous/next/back).
-        if log["show_log"]:
-            show_menu_header("Display Entries")
-            print("Name: {} \nDate: {} \nTask Title: {} \nMinutes Spent: {} "
-                  "\nNotes(Optional): {}"
-                  .format(log["name"], log["date"], log["task_title"],
-                          str(log["minutes"]),
-                          log["notes"]))
-            choice = input("""What would like you like to do? [E]dit record /
-            [D]elete record / [N]ext record /
-            [P]revious record / [R]eturn to Main Menu>""").lower()
-        else:
-            if choice == 'n' or choice == 'p':
-                choice = choice
-            else:
-                choice = 'n'
+        print("choice loop" + "," + str(log["show_log"]) + "," + str(
+            i) + "," + choice + str(work_logs.count()))
+
+        show_menu_header("Display Entries")
+        print("Name: {} \nDate: {} \nTask Title: {} \nMinutes Spent: {} "
+              "\nNotes(Optional): {}"
+              .format(log["name"], log["date"], log["task_title"],
+                      str(log["minutes"]),
+                      log["notes"]))
+        choice = input("""What would like you like to do? [E]dit record /
+        [D]elete record / [N]ext record /
+        [P]revious record / [R]eturn to Main Menu>""").lower()
+
         # Entries can be deleted and edited, letting user change the date,
         # task name, time spent, and/or notes.
         if choice == 'e':
@@ -422,21 +400,21 @@ def display_entries(search_type):
             # print(edited_entry_information)
             # for log in work_logs:
             #    print(log)
-            q = (
-                WorkLog.update({WorkLog.name: edited_entry_information["name"],
-                                WorkLog.date: edited_entry_information["date"],
-                                WorkLog.task_title:
-                                    edited_entry_information["task_title"],
-                                WorkLog.minutes:
-                                    edited_entry_information["minutes"],
-                                WorkLog.notes:
-                                    edited_entry_information["notes"],
-                                })
-                .where(WorkLog.name == log["name"],
-                       WorkLog.date == log["date"],
-                       WorkLog.task_title == log["task_title"],
-                       WorkLog.minutes == log["minutes"],
-                       WorkLog.notes == log["notes"]))
+            q = (WorkLog.
+                 update({WorkLog.name: edited_entry_information["name"],
+                         WorkLog.date: edited_entry_information["date"],
+                         WorkLog.task_title:
+                             edited_entry_information["task_title"],
+                         WorkLog.minutes:
+                             edited_entry_information["minutes"],
+                         WorkLog.notes:
+                             edited_entry_information["notes"],
+                         })
+                 .where(WorkLog.name == log["name"],
+                        WorkLog.date == log["date"],
+                        WorkLog.task_title == log["task_title"],
+                        WorkLog.minutes == log["minutes"],
+                        WorkLog.notes == log["notes"]))
             q.execute()
             log["name"] = edited_entry_information["name"]
             log["date"] = edited_entry_information["date"]
@@ -446,34 +424,31 @@ def display_entries(search_type):
             # for log in work_logs:
             #    print(log)
         elif choice == 'd':
-            if len(work_logs) == 1:
-                print("You can't delete the last log")
-            else:
-                # print("You chose to delete the record")
-                # print(log)
-                # for log in work_logs:
-                #    print(log)
-                q = (
-                    WorkLog.delete()
+            # print("You chose to delete the record")
+            # print(log)
+            # for log in work_logs:
+            #    print(log)
+            q = (
+                WorkLog.delete()
                     .where(WorkLog.name == log["name"],
                            WorkLog.date == log["date"],
                            WorkLog.task_title == log["task_title"],
                            WorkLog.minutes == log["minutes"],
                            WorkLog.notes == log["notes"]))
-                q.execute()
-                break
+            q.execute()
+            break
         # Entries are displayed one at a time with the ability to page through
         # records (previous/next/back).
         elif choice == 'n':
-            # print("You chose go to the next record")
-            if i == len(work_logs)-1:
+            print("You chose go to the next record")
+            if i == work_logs.count() - 1:
                 i = 0
             else:
                 i += 1
         elif choice == 'p':
             # print("You chose go to the previous record")
             if i == 0:
-                i = len(work_logs)-1
+                i = work_logs.count() - 1
             else:
                 i -= 1
         elif choice == 'r':
