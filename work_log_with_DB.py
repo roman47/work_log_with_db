@@ -5,131 +5,16 @@ import unittest
 from unittest import mock
 
 from peewee import *
-import peewee
-print(peewee.__version__)
+# import peewee
+# print(peewee.__version__)
 
 db = SqliteDatabase('work_logs.db')
-
-
-class TestMethods(unittest.TestCase):
-    def test_show_menu_header(self):
-        self.assertEqual(show_menu_header("Test"), 1)
-
-    def test_main_menu(self):
-        self.assertTrue(main_menu())
-
-    def test_main_menu_q(self):
-        with mock.patch('builtins.input', return_value='q'):
-            assert main_menu() == 'q'
-
-    def test_run_main_menu_a(self):
-        with mock.patch('builtins.input', side_effect=['a', 'bob', 'tester',
-                                                       '2', 'notes good']):
-            assert run_main_menu() == 'a'
-
-    def test_run_main_menu_l(self):
-        with mock.patch('builtins.input', side_effect=['l', 'e', 'bob']):
-            assert run_main_menu() == 'l'
-
-    def test_run_main_menu_q(self):
-        with mock.patch('builtins.input', side_effect=['q']):
-            assert run_main_menu() == 'q'
-
-    def test_run_main_menu_x(self):
-        with mock.patch('builtins.input', side_effect=['x']):
-            assert run_main_menu() == 'x'
-
-    def test_display_find_menu_e(self):
-        with mock.patch('builtins.input', side_effect=['e', 'bob']):
-            assert display_find_menu() == 'e'
-
-    def test_display_find_menu_d(self):
-        with mock.patch('builtins.input', side_effect=['d', '11/1/2018']):
-            assert display_find_menu() == 'd'
-
-    def test_display_find_menu_t(self):
-        with mock.patch('builtins.input', side_effect=['t', '2']):
-            assert display_find_menu() == 't'
-
-    def test_display_find_menu_t(self):
-        with mock.patch('builtins.input', side_effect=['t', 'x']):
-            assert display_find_menu() == 't'
-
-    def test_display_find_menu_s(self):
-        with mock.patch('builtins.input', side_effect=['s', 'note']):
-            assert display_find_menu() == 's'
-
-    def test_display_find_menu_r(self):
-        with mock.patch('builtins.input', side_effect=['r', 'q']):
-            assert display_find_menu() == 'r'
-
-    def test_display_find_menu_x(self):
-        with mock.patch('builtins.input', side_effect=['x', 'r', 'q']):
-            assert display_find_menu() == 'x'
-
-    def test_load_work_log_e(self):
-        with mock.patch('builtins.input', side_effect=['bob']):
-            assert load_work_log("e") == 'e'
-
-    def test_load_work_log_d(self):
-        with mock.patch('builtins.input', side_effect=['11/1/2018']):
-            assert load_work_log("d") == 'd'
-
-    def test_load_work_log_d2(self):
-        with mock.patch('builtins.input', side_effect=['11/1/2018 11/2/2018']):
-            assert load_work_log("d") == 'd'
-
-    def test_load_work_log_d3(self):
-        with mock.patch('builtins.input', side_effect=['11/1/2018 5/2/2018']):
-            assert load_work_log("d") == 'd'
-
-    def test_load_work_log_d3(self):
-        with mock.patch('builtins.input', side_effect=['11/1/2018 11/1/2018']):
-            assert load_work_log("d") == 'd'
-
-    def test_load_work_log_d4(self):
-        with mock.patch('builtins.input', side_effect=['e']):
-            assert load_work_log("d") == 'd'
-
-    def test_load_work_log_x(self):
-        with mock.patch('builtins.input', side_effect=['x']):
-            assert load_work_log("x") == 'x'
-
-    def test_load_work_log_t(self):
-        with mock.patch('builtins.input', side_effect=['2']):
-            assert load_work_log("t") == 't'
-
-    def test_load_work_log_s(self):
-        with mock.patch('builtins.input', side_effect=['note']):
-            assert load_work_log("s") == 's'
-
-    def test_display_entries_s(self):
-        with mock.patch('builtins.input', side_effect=['note', 'n']):
-            assert display_entries("s") == 's'
-
-    def test_display_entries_s2(self):
-        with mock.patch('builtins.input', side_effect=['note', 'p']):
-            assert display_entries("s") == 's'
-
-    def test_display_entries_s3(self):
-        with mock.patch('builtins.input', side_effect=['note', 'r']):
-            assert display_entries("s") == 's'
-
-    def test_display_entries_d(self):
-        with mock.patch('builtins.input', side_effect=['note', 'd']):
-            assert display_entries("s") == 's'
-
-    def test_display_entries_e(self):
-        with mock.patch('builtins.input', side_effect=['note', 'e', '5/5/2018',
-                                                       'b2', '2', '2', 'e']):
-            assert display_entries("s") == 's'
-
 
 class WorkLog(Model):
     name = CharField(max_length=255)
     task_title = CharField(max_length=255)
     minutes = IntegerField(default=0)
-    date = DateTimeField(default=datetime.datetime.now)
+    date = DateField(default=datetime.datetime.now)
     notes = CharField(max_length=255)
     show_log = IntegerField(default=0)
 
@@ -212,7 +97,7 @@ Find by [S]earch Term
         else:
             print("You did not enter a valid choice, please only enter "
                   "letters from the list")
-    print("display_find_menu after")
+    # print("display_find_menu after")
 
 
 def create_new_entry():
@@ -301,26 +186,14 @@ def load_work_log(search_type):
                                                        '%m/%d/%Y')
                     date2 = datetime.datetime.strptime(split_date_str[1],
                                                        '%m/%d/%Y')
-                    # print("The first date is " + split_date_str[0])
-                    # print("The second date is " + split_date_str[1])
-                    for log in all_work_logs:
-                        log_date = log["date"]
-                        if date1 < date2:
-                            if log_date < date1 or log_date > date2:
-                                return all_work_logs.select().where(
-                                    WorkLog.date >= date1 & WorkLog.date
-                                    <= date2)
-                        elif date2 < date1:
-                            return all_work_logs.select().where(
-                                WorkLog.date >= date2 & WorkLog.date
-                                <= date1)
+                    return all_work_logs.select().where(
+                        WorkLog.date >= date1 & WorkLog.date
+                        <= date2)
                 else:
                     only_date = datetime.datetime.strptime(date_str,
                                                            '%m/%d/%Y')
                     return all_work_logs.select().where(
-                        WorkLog.date.month == only_date.month,
-                        WorkLog.date.day == only_date.day,
-                        WorkLog.date.year == only_date.year)
+                        WorkLog.date == only_date)
             except ValueError:
                 print("Incorrect data format, should be MM/DD/YYYY")
                 continue
@@ -361,16 +234,16 @@ def display_entries(search_type):
     # readable format with the date, task name, time
     # spent, and notes information.
     work_logs = load_work_log(search_type)
-    print(work_logs.count())
+    # print(work_logs.count())
 
-    print("display_entries before" + str(work_logs.count()))
+    # print("display_entries before" + str(work_logs.count()))
     if work_logs.count() == 0:
         print("Your search returned no values, please try again")
         return
 
-    for log in work_logs:
-        print(log["name"] + " " + log["task_title"] + " "
-              + log["notes"] + " " + str(log["show_log"]))
+    # for log in work_logs:
+    #    print(log["name"] + " " + log["task_title"] + " "
+    #          + log["notes"] + " " + str(log["show_log"]))
     choice = ''
     i = 0
     while choice != 'r':
@@ -378,8 +251,8 @@ def display_entries(search_type):
         log = work_logs[i]
         # Entries are displayed one at a time with the ability to page through
         # records (previous/next/back).
-        print("choice loop" + "," + str(log["show_log"]) + "," + str(
-            i) + "," + choice + str(work_logs.count()))
+        # print("choice loop" + "," + str(log["show_log"]) + "," + str(
+        #    i) + "," + choice + str(work_logs.count()))
 
         show_menu_header("Display Entries")
         print("Name: {} \nDate: {} \nTask Title: {} \nMinutes Spent: {} "
@@ -430,11 +303,11 @@ def display_entries(search_type):
             #    print(log)
             q = (
                 WorkLog.delete()
-                    .where(WorkLog.name == log["name"],
-                           WorkLog.date == log["date"],
-                           WorkLog.task_title == log["task_title"],
-                           WorkLog.minutes == log["minutes"],
-                           WorkLog.notes == log["notes"]))
+                .where(WorkLog.name == log["name"],
+                       WorkLog.date == log["date"],
+                       WorkLog.task_title == log["task_title"],
+                       WorkLog.minutes == log["minutes"],
+                       WorkLog.notes == log["notes"]))
             q.execute()
             break
         # Entries are displayed one at a time with the ability to page through
@@ -467,3 +340,4 @@ if __name__ == "__main__":
     db.create_tables([WorkLog], safe=True)
     # unittest.main()
     run_main_menu()
+    # display_find_menu()
